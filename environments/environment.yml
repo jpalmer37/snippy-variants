@@ -1,0 +1,11 @@
+name: snippy-nf
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3
+  - csvkit=1.0.5
+  - snippy=4.6.0
+  - fastp=0.20.1
+  - qualimap=2.2.2d
