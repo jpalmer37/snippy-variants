@@ -44,16 +44,16 @@ process fastp_json_to_csv {
 process snippy {
 
     tag { sample_id }
-    
-    cpus 8
 
-    publishDir "${params.outdir}", mode: 'copy', pattern: "${sample_id}"
+    publishDir params.versioned_outdir ? "${params.outdir}/${sample_id}/${params.pipeline_short_name}-v${params.pipeline_minor_version}-output" : "${params.outdir}", mode: 'copy', pattern: "${sample_id}/${sample_id}*", saveAs: { filename -> filename.split("/").last() }
+    publishDir params.versioned_outdir ? "${params.outdir}/${sample_id}/${params.pipeline_short_name}-v${params.pipeline_minor_version}-output" : "${params.outdir}", mode: 'copy', pattern: "${sample_id}/reference", saveAs: { filename -> filename.split("/").last() }
 
     input:
     tuple val(sample_id), file(reads_1), file(reads_2), path(ref)
 
     output:
-    tuple val(sample_id), path("${sample_id}", type: 'dir'), emit: snippy_outdir
+    tuple val(sample_id), path("${sample_id}/${sample_id}*"), emit: snippy_files
+    tuple val(sample_id), path("${sample_id}/reference", type: 'dir'), emit: snippy_ref
     tuple val(sample_id), path("${sample_id}/${sample_id}.bam"), path("${sample_id}/${sample_id}.bam.bai"), emit: alignment
     
     script:
@@ -62,6 +62,10 @@ process snippy {
       --cpus ${task.cpus} \
       --report \
       --prefix ${sample_id} \
+      --mincov ${params.mincov} \
+      --basequal ${params.basequal} \
+      --mapqual ${params.mapqual} \
+      --minfrac ${params.minfrac} \
       --ref ${ref} \
       --R1 ${reads_1} \
       --R2 ${reads_2} \
@@ -171,22 +175,4 @@ process count_variants {
   awk -F ',' 'BEGIN { OFS=FS }; \$3 == "complex"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_complex
   paste -d ',' sample_id num_snps num_indel num_mnp num_complex >> ${sample_id}_variant_counts.csv
   """
-}
-
-process join_csvs {
-
-    executor 'local'
-
-    publishDir "${params.outdir}", mode: 'copy', pattern: "qc.csv", saveAs: { x -> "${params.qc_filename}" }
-
-    input:
-    tuple file(read_qc), file(alignment_qc), file(variant_counts)
-
-    output:
-    path("qc.csv")
-    
-    script:
-    """
-    csvjoin -d ',' -c 'sample_id' ${read_qc} ${alignment_qc} ${variant_counts} > qc.csv
-    """
 }
