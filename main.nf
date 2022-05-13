@@ -6,7 +6,6 @@ include { fastp } from './modules/snippy.nf'
 include { snippy } from './modules/snippy.nf'
 include { count_variants } from './modules/snippy.nf'
 include { qualimap_bamqc } from './modules/snippy.nf'
-include { qualimap_bamqc_genome_results_to_csv } from './modules/snippy.nf'
 
 workflow {
   ch_ref = Channel.fromPath( "${params.ref}", type: 'file')
@@ -21,5 +20,5 @@ workflow {
     fastp(ch_fastq)
     snippy(fastp.out.reads.combine(ch_ref))
     qualimap_bamqc(snippy.out.alignment)
-    qualimap_bamqc_genome_results_to_csv(qualimap_bamqc.out).map{ it -> it[1] }.collectFile(name: 'alignment_qc.csv', keepHeader: true, sort: { it.text }).set{ ch_alignment_qc }
+    count_variants(snippy.out.variants_csv.combine(ch_ref))
 }

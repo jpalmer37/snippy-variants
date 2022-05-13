@@ -35,6 +35,7 @@ process snippy {
     tuple val(sample_id), path("${sample_id}/${sample_id}*"), emit: snippy_files
     tuple val(sample_id), path("${sample_id}/reference", type: 'dir'), emit: snippy_ref
     tuple val(sample_id), path("${sample_id}/${sample_id}.bam"), path("${sample_id}/${sample_id}.bam.bai"), emit: alignment
+    tuple val(sample_id), path("${sample_id}/${sample_id}.csv"), emit: variants_csv
     
     script:
     """
@@ -53,25 +54,6 @@ process snippy {
     """
 }
 
-process mosdepth {
-
-    tag { sample_id }
-    
-    cpus 2
-
-    publishDir "${params.outdir}", mode: 'copy', pattern: "${sample_id}.mosdepth.global.dist.txt"
-
-    input:
-    tuple val(sample_id), file(alignment), file(alignment_index)
-
-    output:
-    path("${sample_id}.mosdepth.global.dist.txt")
-    
-    script:
-    """
-    mosdepth --threads ${task.cpus} --no-per-base ${sample_id} ${alignment}
-    """
-}
 
 process samtools_stats_summary {
 
@@ -96,39 +78,21 @@ process samtools_stats_summary {
 process qualimap_bamqc {
 
     tag { sample_id }
-    
-    cpus 2
 
-    publishDir "${params.outdir}", mode: 'copy', pattern: "${sample_id}"
+    publishDir params.versioned_outdir ? "${params.outdir}/${sample_id}/${params.pipeline_short_name}-v${params.pipeline_minor_version}-output" : "${params.outdir}/${sample_id}/", mode: 'copy', pattern: "${sample_id}_bamqc*"
 
     input:
     tuple val(sample_id), file(alignment), file(alignment_index)
 
     output:
-    tuple val(sample_id), path("${sample_id}_bamqc/genome_results.txt"), emit: genome_results
+    tuple val(sample_id), path("${sample_id}_qualimap_bamqc_genome_results.csv"), emit: genome_results_csv
+    tuple val(sample_id), path("${sample_id}_bamqc"), emit: qualimap_bamqc_dir
     
     script:
     """
     qualimap bamqc -bam ${alignment} --outdir ${sample_id}_bamqc
+    qualimap_bamqc_genome_results_to_csv.py -s ${sample_id} ${sample_id}_bamqc/genome_results.txt > ${sample_id}_qualimap_bamqc_genome_results.csv
     """
-}
-
-process qualimap_bamqc_genome_results_to_csv {
-
-  tag { sample_id }
-
-  executor 'local'
-
-  input:
-  tuple val(sample_id), path(qualimap_bamqc_genome_results)
-
-  output:
-  tuple val(sample_id), path("${sample_id}_qualimap_bamqc_genome_results.csv")
-
-  script:
-  """
-  qualimap_bamqc_genome_results_to_csv.py -s ${sample_id} ${qualimap_bamqc_genome_results} > ${sample_id}_qualimap_bamqc_genome_results.csv
-  """
 }
 
 process count_variants {
@@ -137,22 +101,25 @@ process count_variants {
 
   executor 'local'
 
+  publishDir params.versioned_outdir ? "${params.outdir}/${sample_id}/${params.pipeline_short_name}-v${params.pipeline_minor_version}-output" : "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_variant_counts.csv"
+
   input:
-  tuple val(sample_id), path(snippy_outdir)
+  tuple val(sample_id), path(variants_csv), path(ref)
 
   output:
   tuple val(sample_id), path("${sample_id}_variant_counts.csv")
 
   script:
   """
-  echo 'sample_id,num_snps,num_indel,num_mnp,num_complex' > ${sample_id}_variant_counts.csv
+  echo 'sample_id,ref_id,num_snps,num_indel,num_mnp,num_complex' > ${sample_id}_variant_counts.csv
   echo '${sample_id}' > sample_id
-  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "snp"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_snps
-  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "ins"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_ins
-  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "del"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_del
+  head -n 1 ${ref} | tr -d  '>' | cut -d ' ' -f 1 > ref_id
+  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "snp"' ${variants_csv} | wc -l > num_snps
+  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "ins"' ${variants_csv} | wc -l > num_ins
+  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "del"' ${variants_csv} | wc -l > num_del
   echo \$(cat num_ins) + \$(cat num_del) | bc > num_indel
-  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "mnp"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_mnp
-  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "complex"' ${snippy_outdir}/${sample_id}.csv | wc -l > num_complex
-  paste -d ',' sample_id num_snps num_indel num_mnp num_complex >> ${sample_id}_variant_counts.csv
+  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "mnp"' ${variants_csv} | wc -l > num_mnp
+  awk -F ',' 'BEGIN { OFS=FS }; \$3 == "complex"' ${variants_csv} | wc -l > num_complex
+  paste -d ',' sample_id ref_id num_snps num_indel num_mnp num_complex >> ${sample_id}_variant_counts.csv
   """
 }
