@@ -2,8 +2,8 @@
 
 nextflow.enable.dsl = 2
 
-include { fastp } from './modules/snippy.nf'
-include { snippy } from './modules/snippy.nf'
+include { fastp }          from './modules/snippy.nf'
+include { snippy }         from './modules/snippy.nf'
 include { count_variants } from './modules/snippy.nf'
 include { qualimap_bamqc } from './modules/snippy.nf'
 

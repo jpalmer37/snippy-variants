@@ -8,8 +8,8 @@ process fastp {
   tuple val(sample_id), path(reads_r1), path(reads_r2)
 
   output:
-  tuple val(sample_id), path("${sample_id}_fastp.json"), emit: fastp_json
-  tuple val(sample_id), path("${sample_id}_fastp.csv"), emit: fastp_csv
+  tuple val(sample_id), path("${sample_id}_fastp.json"),                                                    emit: fastp_json
+  tuple val(sample_id), path("${sample_id}_fastp.csv"),                                                     emit: fastp_csv
   tuple val(sample_id), path("${sample_id}_trimmed_R1.fastq.gz"), path("${sample_id}_trimmed_R2.fastq.gz"), emit: reads
 
   script:
@@ -32,15 +32,20 @@ process snippy {
     tuple val(sample_id), file(reads_1), file(reads_2), path(ref)
 
     output:
-    tuple val(sample_id), path("${sample_id}/${sample_id}*"), emit: snippy_files
-    tuple val(sample_id), path("${sample_id}/reference", type: 'dir'), emit: snippy_ref
+    tuple val(sample_id), path("${sample_id}/${sample_id}*"),                                               emit: snippy_files
+    tuple val(sample_id), path("${sample_id}/reference", type: 'dir'),                                      emit: snippy_ref
     tuple val(sample_id), path("${sample_id}/${sample_id}.bam"), path("${sample_id}/${sample_id}.bam.bai"), emit: alignment
-    tuple val(sample_id), path("${sample_id}/${sample_id}.csv"), emit: variants_csv
+    tuple val(sample_id), path("${sample_id}/${sample_id}.csv"),                                            emit: variants_csv
     
     script:
+    ram = task.memory ? ram = "--ram ${task.memory}" : "" 
     """
+    mkdir tmp
+
     snippy \
+      --tmpdir ./tmp \
       --cpus ${task.cpus} \
+      ${ram} \
       --report \
       --prefix ${sample_id} \
       --mincov ${params.mincov} \
@@ -86,7 +91,7 @@ process qualimap_bamqc {
 
     output:
     tuple val(sample_id), path("${sample_id}_qualimap_bamqc_genome_results.csv"), emit: genome_results_csv
-    tuple val(sample_id), path("${sample_id}_bamqc"), emit: qualimap_bamqc_dir
+    tuple val(sample_id), path("${sample_id}_bamqc"),                             emit: qualimap_bamqc_dir
     
     script:
     """
