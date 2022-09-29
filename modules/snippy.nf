@@ -38,9 +38,14 @@ process snippy {
     tuple val(sample_id), path("${sample_id}/${sample_id}.csv"), emit: variants_csv
     
     script:
+    ram = task.memory ? ram = "--ram ${task.memory}" : "" 
     """
+    mkdir tmp
+
     snippy \
+      --tmpdir ./tmp \
       --cpus ${task.cpus} \
+      ${ram} \
       --report \
       --prefix ${sample_id} \
       --mincov ${params.mincov} \
