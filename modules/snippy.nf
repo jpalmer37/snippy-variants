@@ -15,8 +15,8 @@ process fastp {
   script:
   """
   fastp \
-    -i ${reads[0]} \
-    -I ${reads[1]} \
+    -i ${reads_r1} \
+    -I ${reads_r2} \
     --cut_tail \
     -o ${sample_id}_R1.trim.fastq.gz \
     -O ${sample_id}_R2.trim.fastq.gz \
