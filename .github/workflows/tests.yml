@@ -37,7 +37,7 @@ jobs:
       run: bash .github/scripts/run_pipeline.sh
     - name: Copy work dir to artifacts
       if: failure()
-      run: cp -r work artifacts/
+      run: mv work artifacts/work
     - name: Create Output Checking Environment
       run: bash .github/scripts/create_output_checking_environment.sh
     - name: Check Outputs
