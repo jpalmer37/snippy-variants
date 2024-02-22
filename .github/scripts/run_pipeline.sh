@@ -9,6 +9,7 @@ nextflow run main.nf \
 	 --cache ${HOME}/.conda/envs \
 	 --fastq_input .github/data/fastq \
 	 --ref .github/data/assemblies/NC_000962.3.fa \
+	 --mincov 6 \
 	 --outdir .github/data/test_output \
 	 -with-report .github/data/test_output/nextflow_report.html \
  	 -with-trace .github/data/test_output/nextflow_trace.tsv
