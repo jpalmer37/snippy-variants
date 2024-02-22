@@ -1,3 +1,5 @@
+[![Tests](https://github.com/BCCDC-PHL/snippy-variants/actions/workflows/tests.yml/badge.svg)](https://github.com/BCCDC-PHL/snippy-variants/actions/workflows/tests.yml)
+
 # snippy-variants
 
 Perform read mapping and variant calling using [snippy](https://github.com/tseemann/snippy).
