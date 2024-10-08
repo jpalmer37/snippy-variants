@@ -15,6 +15,7 @@ process fastp {
   script:
   """
   fastp \
+    --thread ${task.cpus} \
     -i ${reads_r1} \
     -I ${reads_r2} \
     --cut_tail \
@@ -25,6 +26,26 @@ process fastp {
   """
 }
 
+
+process find_best_reference {
+
+    executor 'local'
+  
+    publishDir "${params.outdir}", mode: 'copy', pattern: "reference.*"
+
+    input:
+    path(refseeker_results_path)
+
+    output:
+    path("reference.fa"),                                               emit: fasta
+    path("reference.gb"),                                               emit: gb
+    
+    script:
+    """
+    find_best_reference.py --input ${refseeker_results_path} --outname reference
+    """
+
+}
 
 process snippy {
 

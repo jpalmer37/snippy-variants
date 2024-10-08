@@ -6,6 +6,9 @@ channels:
 dependencies:
   - python=3
   - csvkit=1.0.5
+  - pandas=2.1.3
+  - biopython=1.81
   - snippy=4.6.0
   - fastp=0.20.1
   - qualimap=2.2.2d
+  - samtools=1.20
