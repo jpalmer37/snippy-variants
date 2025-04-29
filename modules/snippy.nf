@@ -65,6 +65,7 @@ process snippy {
     
     script:
     ram = task.memory ? ram = "--ram ${task.memory}" : "" 
+    report = params.skip_report ? "" : "--report"
     """
     mkdir tmp
 
@@ -72,7 +73,7 @@ process snippy {
       --tmpdir ./tmp \
       --cpus ${task.cpus} \
       ${ram} \
-      --report \
+      ${report} \
       --prefix ${sample_id} \
       --mincov ${params.mincov} \
       --basequal ${params.basequal} \
